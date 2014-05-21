@@ -68,8 +68,8 @@ for st in introns_file:
 introns_file.close
 
 #
-WindowStart = 0
-WindowEnd = 0
+window_start = 0
+window_end = 0
 chromosome_name = ''
 
 vcf_file = open(vcf_file_name, 'r')
@@ -86,8 +86,8 @@ for i in vcf_file:
 		chromosome_name = list_line[0]
 		current_chrom_windows = iter(intron_holder[list_line[0]].items())
 		current_window = next(current_chrom_windows)
-		WindowStart = current_window[1].window_start
-		WindowEnd = current_window[1].window_end
+		window_start = current_window[1].window_start
+		window_end = current_window[1].window_end
 		
 	if long(list_line[1]) - 1 <= long(WindowEnd):
 		current_window[1].process_line(list_line)
@@ -95,8 +95,8 @@ for i in vcf_file:
 		try:
 			while long(list_line[1]) - 1 > long(WindowEnd):
 				current_window = next(current_chrom_windows)
-				WindowStart = current_window[1].window_start
-				WindowEnd = current_window[1].window_end
+				window_start = current_window[1].window_start
+				window_end = current_window[1].window_end
 			current_window[1].process_line(list_line)
 		except:
 			continue
@@ -105,17 +105,16 @@ vcf_file.close()
 min_size = 2000
 if options.min_size: min_size = options.min_size
 
-CounterList = [item for chrom_introns in intron_holder.values() for item in chrom_introns.values() if long(long(item.window_end) - long(item.window_start) + 1) >= long(min_size)]
-print CounterList[:2]
-SortedList = sorted(CounterList, key = lambda window: window.normalized_counter() if options.normalize else window.counter, reverse = True)
-SortedByCheetah = [sorted(CounterList, key = lambda window: window.cheetah[i], reverse = True) for i in range(7)]
+counter_list = [item for chrom_introns in intron_holder.values() for item in chrom_introns.values() if long(long(item.window_end) - long(item.window_start) + 1) >= long(min_size)]
+sorted_list = sorted(counter_list, key = lambda window: window.normalized_counter() if options.normalize else window.counter, reverse = True)
+sorted_by_cheetah = [sorted(counter_list, key = lambda window: window.cheetah[i], reverse = True) for i in range(7)]
 
-print len(set([x.counter for x in SortedList]))
+print len(set([x.counter for x in sorted_list]))
 
 #
 ##1. output data for top n most variable
-outputAmount = 100
-filtered_list = SortedList[:outputAmount]
+output_amount = 100
+filtered_list = sorted_list[: output_amount]
 g = open(output_file_name, 'w')
 for x in filtered_list:
 	g.write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n".format(x.chromosome, x.window_start, x.window_end, x.intron_name, x.counter, x.normalized_counter() if options.normalize else x.counter))

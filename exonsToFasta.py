@@ -35,7 +35,6 @@ class WindowInfo(object):
 	#
 	def process_line(self, line):
 		if long(self.window_start) > long(line[1]) - 1 or long(self.window_end) < long(line[1]) - 1:
-			#print "{0}, {1}, {2}".format(self.window_start, self.window_end, line[1])
 			return
 		self.counter += 1 #the same as before
 		for x in range(self.cheetah_no):
@@ -78,11 +77,10 @@ def load_fasta(fasta_file_name):
 				buffer = line.strip('\n')
 				yield(chromosome_name, buffer, offset)
 				offset += len(buffer)
-				#print len(buffer)
 		# 
 	#
 	
-outputAmount = 100
+output_amount = 100
 filtered_list = OrderedDict()
 with open(bed_file_name) as f:
 	for line in f:
@@ -92,7 +90,6 @@ with open(bed_file_name) as f:
 
 current_chromosome = ''
 chromosome_windows = list()
-#current_chrom_windows = iter(intron_holder[list_line[0]].items())
 current_window = 0
 output_file = open(output_file_name, 'w')
 

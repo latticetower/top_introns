@@ -43,7 +43,6 @@ class WindowInfo(object):
 	#
 	def process_line(self, line):
 		if long(self.window_start) > long(line[1]) - 1 or long(self.window_end) < long(line[1]) - 1:
-			#print "{0}, {1}, {2}".format(self.window_start, self.window_end, line[1])
 			return
 		self.counter += 1 #the same as before
 		for x in range(self.cheetah_no):
@@ -145,8 +144,8 @@ for st in exons_file:
 exons_file.close
 
 #
-WindowStart = 0
-WindowEnd = 0
+window_start = 0
+window_end = 0
 chromosome_name = ''
 
 vcf_file = open(vcf_file_name, 'r')
@@ -166,8 +165,8 @@ for i in vcf_file:
 			continue
 		current_chrom_windows = iter(sorted(exon_holder[list_line[0]].items(), key = lambda w: w[1].window_start))
 		current_window = next(current_chrom_windows)
-		WindowStart = current_window[1].window_start
-		WindowEnd = current_window[1].window_end
+		window_start = current_window[1].window_start
+		window_end = current_window[1].window_end
 		
 	if long(list_line[1]) - 1 <= long(WindowEnd):
 		current_window[1].process_line(list_line)
@@ -175,8 +174,8 @@ for i in vcf_file:
 		try:
 			while long(list_line[1]) - 1 > long(WindowEnd):
 				current_window = next(current_chrom_windows)
-				WindowStart = current_window[1].window_start
-				WindowEnd = current_window[1].window_end
+				window_start = current_window[1].window_start
+				window_end = current_window[1].window_end
 			current_window[1].process_line(list_line)
 		except:
 			continue
