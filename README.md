@@ -8,7 +8,7 @@ Initially it was made for counting SNPs in cheetah genome.
 Dependencies
 ------------
 
-All scripts are build on top of python 2.7.
+All scripts are written in python 2.7.
 
 Usage
 -----
@@ -26,7 +26,7 @@ As a result, you may expect to recieve the folder containing .nexus files, which
 
 Input files format
 ------------------
-The main script and subscripts expect the following input data:
+The main script and worker scripts expect the following input data:
 
 1. .fasta file with genome information. It should contain collection of .fasta strings, one for each chromosome, with chromosome name in description line.
 
@@ -45,10 +45,10 @@ The folder also contains:
   + .fasta file with list of windows sequences (taken from reference file)
   + .bed file with list of top `n` windows
 
-These two files are generated and used by subscripts.
+These two files are generated and used by worker scripts to store intermediate results.
 
-Calling subscripts independently
---------------------------------
+Calling worker scripts independently
+------------------------------------
 
 Project home page
 -----------------
