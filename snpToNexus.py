@@ -6,10 +6,11 @@ from collections import OrderedDict
 from optparse import OptionParser
 parser = OptionParser()
 
-#parser.add_option("-v", "--vcf", dest="vcffile", help="input FILE in .vcf format", metavar="FILE")
-parser.add_option("-i", "--input", dest="inputfile", help="input FILE in .bed format", metavar="FILE")
-parser.add_option("-o", "--output", dest="outputfolder", help="output folder for .nexus files", metavar="FOLDER")
+parser.add_option("-v", "--vcf", dest="vcf_file", help="input FILE in .vcf format", metavar="FILE")
+parser.add_option("-i", "--input", dest="input_file", help="input FILE in .bed format", metavar="FILE")
+parser.add_option("-o", "--output", dest="output_folder", help="output folder for .nexus files", metavar="FOLDER")
 parser.add_option("-f", "--fasta", dest="referencefile", help = "input FILE in .fasta format", metavar = "FILE")
+
 parser.add_option("-v", "--verbose",
                   action="store_true", dest="verbose", default=False,
                   help="don't print status messages to stdout")
@@ -21,9 +22,9 @@ exons_file_name = 'top100_variable_exons.bed'
 output_folder_name = 'results/'
 fasta_file_name = 'cheetah_exons.fasta'
 
-#if options.vcffile: vcf_file_name = options.vcffile
-if options.inputfile: exons_file_name = options.inputfile
-if options.outputfolder: output_folder_name = options.outputfolder
+if options.vcf_file: vcf_file_name = options.vcf_file
+if options.input_file: exons_file_name = options.input_file
+if options.output_folder: output_folder_name = options.output_folder
 if options.referencefile: fasta_file_name = options.referencefile
 
 #vcf_file = open(vcf_file_name, 'r')
@@ -47,11 +48,11 @@ class WindowInfo(object):
 		self.counter += 1 #the same as before
 		for x in range(self.cheetah_no):
 			if line[- self.cheetah_no + x].startswith('0/1'):
-				self.cheetah[x] += 1      
+				self.cheetah[x] += 1
 		self.line_infos[long(line[1])] = line
 	#
 	def to_str(self):
-		return "{0}\t{1}\t{2}".format(self.chromosome, self.window_start, self.window_end)  
+		return "{0}\t{1}\t{2}".format(self.chromosome, self.window_start, self.window_end)
 	#
 	def getIUPAC(self, letters):
 		if len(letters) == 1:
@@ -78,7 +79,7 @@ class WindowInfo(object):
 			return 'W'
 		if len(set(letters) & set(['C', 'G'])) == 2:
 			return 'S'
-	def getFromIUPAC(self, letter):  
+	def getFromIUPAC(self, letter):
 		if letter == 'R': return ['A', 'G']
 		if letter == 'Y': return ['C', 'T']
 		if letter == 'M': return ['A', 'C']
@@ -100,10 +101,10 @@ class WindowInfo(object):
 			index = long(pos) - 1#convert to zero-based
 			index -= long(self.window_start)
 			info = x[1][-7 + i]
-			letters = list() 
+			letters = list()
 			if info.startswith('0/0'):
 				letters = self.getFromIUPAC(ref)
-			else: 
+			else:
 				if info.startswith('1/1'):
 					letters = self.getFromIUPAC(alt)
 				else:
@@ -132,16 +133,16 @@ class WindowInfo(object):
 		g.close()#for i in range(7):
 # ----------
 # main code
-# ----------   
-exons_file = open(exons_file_name, 'r') 
+# ----------
+windows_file = open(exons_file_name, 'r')
 #load introns
 exon_holder = OrderedDict()
-for st in exons_file:
+for st in windows_file:
 	exon_line = st.split()
 	if (not exon_line[0]  in exon_holder.keys()): exon_holder[exon_line[0]] = OrderedDict()
 	exon_holder[exon_line[0]][exon_line[3]] = WindowInfo(*exon_line[:4])
 
-exons_file.close
+windows_file.close
 
 #
 window_start = 0
@@ -167,7 +168,7 @@ for i in vcf_file:
 		current_window = next(current_chrom_windows)
 		window_start = current_window[1].window_start
 		window_end = current_window[1].window_end
-		
+
 	if long(list_line[1]) - 1 <= long(WindowEnd):
 		current_window[1].process_line(list_line)
 	else:
@@ -194,7 +195,7 @@ def load_fasta(fasta_file_name):
 				buffer = line.strip('\n')
 				yield(chromosome_name, exon_name, buffer)
 				#print len(buffer)
-		# 
+		#
 	#
 
 ##1. output data for top n most variable

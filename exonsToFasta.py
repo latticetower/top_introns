@@ -8,17 +8,17 @@ bed_file_name = 'top100_variable_exons.bed'#'top_exons.bed'#
 from optparse import OptionParser
 parser = OptionParser()
 
-#parser.add_option("-v", "--vcf", dest="vcffile", help="input FILE in .vcf format", metavar="FILE")
-parser.add_option("-i", "--input", dest="inputfile", help="input FILE in .bed format", metavar="FILE")
-parser.add_option("-o", "--output", dest="outputfile", help="output file in fasta format", metavar="FILE")
-parser.add_option("-f", "--fasta", dest="referencefile", help = "input FILE in .fasta format", metavar = "FILE")
+parser.add_option("-v", "--vcf", dest="vcf_file", help="input FILE in .vcf format", metavar="FILE")
+parser.add_option("-i", "--input", dest="input_file", help="input FILE in .bed format", metavar="FILE")
+parser.add_option("-o", "--output", dest="output_file", help="output file in fasta format", metavar="FILE")
+parser.add_option("-f", "--fasta", dest="reference_file", help = "input FILE in .fasta format", metavar = "FILE")
 
 (options, args) = parser.parse_args()
 
-#if options.vcffile: vcf_file_name = options.vcffile
-if options.inputfile: bed_file_name = options.inputfile
-if options.outputfile: output_file_name = options.outputfile
-if options.referencefile: fasta_file_name = options.referencefile
+if options.vcf_file: vcf_file_name = options.vcf_file
+if options.input_file: bed_file_name = options.input_file
+if options.output_file: output_file_name = options.output_file
+if options.reference_file: fasta_file_name = options.reference_file
 
 
 class WindowInfo(object):
@@ -39,11 +39,11 @@ class WindowInfo(object):
 		self.counter += 1 #the same as before
 		for x in range(self.cheetah_no):
 			if line[- self.cheetah_no + x].startswith('0/1'):
-				self.cheetah[x] += 1      
+				self.cheetah[x] += 1
 		self.line_infos[long(line[1])] = line
 	#
 	def to_str(self):
-		return "{0}\t{1}\t{2}".format(self.chromosome, self.window_start, self.window_end)  
+		return "{0}\t{1}\t{2}".format(self.chromosome, self.window_start, self.window_end)
 	#
 	def isoverlap(self, start, end):
 		return (self.window_start <= start and start <= self.window_end) or (self.window_start <= end and end <= self.window_end)
@@ -65,21 +65,21 @@ class WindowInfo(object):
 def load_fasta(fasta_file_name):
 	chromosome_name = ''
 	buffer = ''
-	offset = 0 # zero-based offset for current string  
+	offset = 0 # zero-based offset for current string
 	with open(fasta_file_name) as f:
 		for line in f:
 			if line.startswith('>'):
 				buffer = ''
 				offset = 0
 				chromosome_name = line.strip('\n')[1:]
-				print "Processing new chromosome {0}".format(chromosome_name)
+				if options.verbose: print("Processing new chromosome {0}".format(chromosome_name))
 			else:
 				buffer = line.strip('\n')
 				yield(chromosome_name, buffer, offset)
 				offset += len(buffer)
-		# 
+		#
 	#
-	
+
 output_amount = 100
 filtered_list = OrderedDict()
 with open(bed_file_name) as f:
@@ -94,7 +94,7 @@ current_window = 0
 output_file = open(output_file_name, 'w')
 
 for chromosome in load_fasta(fasta_file_name):
-	if current_chromosome != chromosome[0]: 
+	if current_chromosome != chromosome[0]:
 		current_chromosome = chromosome[0]
 		if (not current_chromosome in filtered_list.keys()):
 			current_chromosome = ''
@@ -106,16 +106,16 @@ for chromosome in load_fasta(fasta_file_name):
 	#break
 	offset = long(chromosome[2])
 	offset_end = long(offset + len(chromosome[1]) - 1)
-	if long(offset_end) < long(current_window[1].window_start): 
+	if long(offset_end) < long(current_window[1].window_start):
 		continue
 	if long(current_window[1].window_start) < long(offset) and long(current_window[1].window_end) > long(offset_end):
 		current_window[1].sequence += chromosome[1]
 		continue
 	if long(offset) <= long(current_window[1].window_end) and long(current_window[1].window_end) <= long(offset_end) and long(current_window[1].window_start < offset):
 		current_window[1].sequence += chromosome[1][ : current_window[1].window_end - offset + 1]
-		output_file.write(current_window[1].print_to_fasta())      
+		output_file.write(current_window[1].print_to_fasta())
 		try:
-			#while long(current_window[1].window_end) < long(offset): 
+			#while long(current_window[1].window_end) < long(offset):
 			current_window = next(chromosome_windows)
 		except:
 			continue#
@@ -123,7 +123,7 @@ for chromosome in load_fasta(fasta_file_name):
 		while long(current_window[1].window_start) >= long(offset) and long(current_window[1].window_end) <= long(offset_end):
 			current_window[1].sequence = chromosome[1][current_window[1].window_start - offset : current_window[1].window_end - offset + 1]
 			output_file.write(current_window[1].print_to_fasta())
-			#while long(current_window[1].window_end) < long(offset): 
+			#while long(current_window[1].window_end) < long(offset):
 			current_window = next(chromosome_windows)
 	except:
 		continue#
@@ -132,10 +132,10 @@ for chromosome in load_fasta(fasta_file_name):
 		continue
 	if long(offset) > long(current_window[1].window_end):
 		try:
-			while long(current_window[1].window_end) < long(offset): 
+			while long(current_window[1].window_end) < long(offset):
 				current_window = next(chromosome_windows)
 		except:
 			continue
 	#break
-	
+
 output_file.close()
