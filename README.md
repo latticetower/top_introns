@@ -26,7 +26,7 @@ As a result, you may expect to recieve the folder containing .nexus files, which
 Sample usage:
 
 ```
-python.exe top_introns.py -v .\test_dataset2\test_snp_list.vcf -f .\test_dataset2\test_input.fasta -w .\test_dataset2\test_windows.bed -o results -n 3 --normalize
+python top_introns.py -v .\test_dataset2\test_snp_list.vcf -f .\test_dataset2\test_input.fasta -w .\test_dataset2\test_windows.bed -o results -n 3 --normalize
 ```
 or you can call ```top_introns.py --help``` and get information about available options and their meaning.
 

@@ -3,6 +3,7 @@
 import subprocess
 from data_processor import DataProcessor
 from optparse import OptionParser
+import sys
 
 parser = OptionParser()
 
@@ -36,7 +37,6 @@ window_file_name = options.window_file_name
 output_folder_name = options.output_folder
 
 try:
-	#
 	DataProcessor(window_file_name,
 		vcf_file_name,
 		fasta_file_name,
@@ -45,5 +45,5 @@ try:
 		options.min_size,
 		options.normalize).process()
 	print("--------\ndata processed and can be found in folder specified")
-except:
-	print "Got some error while processing input data. Look at README.md and check files you've provided, or call with --help key"
+except BaseException as e:
+	print "Got error:", e
