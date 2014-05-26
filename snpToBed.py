@@ -1,123 +1,103 @@
 #!/usr/bin/python
 import fileinput
 from collections import OrderedDict
-
-
 from optparse import OptionParser
-parser = OptionParser()
+from window_info3 import WindowInfo
 
-parser.add_option("-v", "--vcf", dest="vcf_file", help="input FILE in .vcf format", metavar="FILE")
-parser.add_option("-i", "--input", dest="input_file", help="input FILE in .bed format", metavar="FILE")
-parser.add_option("-o", "--output", dest="output_file", help="output FILE in .bed format", metavar="FILE")
-parser.add_option("", "--normalize",
-                  action="store_true", dest="normalize", default=False,
-                  help="normalize snp counter by sequence length")
+class TopNWindowsSelector(object):
+	def __init__(self, output_amount, normalize):
+		self.output_amount = output_amount
+		self.windows_container = OrderedDict()
+		self.chromosome_name = ""
+		self.normalize = normalize
+	def load_windows_info(self, windows_file_name):
+		with open(windows_file_name) as f:
+			for st in f:
+				window_line = st.split()
+				if (not window_line[0]  in self.windows_container.keys()): 
+					self.windows_container[window_line[0]] = OrderedDict()
+				self.windows_container[window_line[0]][window_line[1]] = WindowInfo(*window_line[:4])
+	
+	def process_snp(self, snp_info):
+		if self.chromosome_name != snp_info[0]:
+			self.chromosome_name = snp_info[0]
+			self.current_chrom_windows = iter(self.windows_container[snp_info[0]].items())
+			self.current_window = next(self.current_chrom_windows)
+		window_start = self.current_window[1].window_start
+		window_end = self.current_window[1].window_end
 
-parser.add_option("-n", "", dest="top_n", type="int", default=100)
-
-parser.add_option("-s", "--min-size", dest="min_size", type = "int", default=1)
-(options, args) = parser.parse_args()
-
-vcf_file_name = 'cheetah_SNP_filtered.vcf'
-windows_file_name = 'cheetah_exonss.bed'
-
-output_file_name = 'top100_variable_exons.bed'
-
-if options.output_file: output_file_name = options.output_file
-
-if options.vcf_file: vcf_file_name = options.vcf_file
-if options.input_file: windows_file_name = options.input_file
-
+		if long(snp_info[1]) - 1 <= long(window_end):
+			self.current_window[1].process_line(snp_info)
+		else:
+			try:
+				while long(snp_info[1]) - 1 > long(window_end):
+					self.current_window = next(self.current_chrom_windows)
+					window_start = self.current_window[1].window_start
+					window_end = self.current_window[1].window_end
+				self.current_window[1].process_line(snp_info)
+			except:
+				return
+	#
+	def load_snp(self, vcf_file_name):
+		with open(vcf_file_name) as f:
+			for line in f:
+				if line.startswith('#'):
+					continue
+				snp_info = line.strip('\n').split()
+				self.process_snp(snp_info)
+	
+	def select_top_n(self, min_size):
+		counter_list = [item for chrom_windows in self.windows_container.values() for item in chrom_windows.values() if long(long(item.window_end) - long(item.window_start) + 1) >= long(min_size)]
+		self.filtered_list = sorted(counter_list, key = lambda window: window.normalized_counter() if self.normalize else window.counter, reverse = True)
+		self.filtered_list =  self.filtered_list[: self.output_amount]
+	def save_to_bed_file(self, output_file_name):
+		g = open(output_file_name, 'w')
+		for x in self.filtered_list:
+			g.write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n".format(
+						x.chromosome, 
+						x.window_start, 
+						x.window_end, 
+						x.intron_name, 
+						x.counter, 
+						x.normalized_counter() if self.normalize else x.counter
+					)
+				)
+		g.close()
+		
+		
+def main():
+	parser = OptionParser()
+	
+	parser.add_option("-v", "--vcf", dest="vcf_file", help="input FILE in .vcf format", metavar="FILE")
+	parser.add_option("-i", "--input", dest="input_file", help="input FILE in .bed format", metavar="FILE")
+	parser.add_option("-o", "--output", dest="output_file", help="output FILE in .bed format", metavar="FILE")
+	parser.add_option("", "--normalize",
+		action="store_true", dest="normalize", default=False,
+		help="normalize snp counter by sequence length")
+	parser.add_option("-n", "", dest="top_n", type = "int", default = 100)
+	parser.add_option("-s", "--min-size", dest="min_size", type = "int", default=1)
+	(options, args) = parser.parse_args()
+	
+	vcf_file_name = 'cheetah_SNP_filtered.vcf'
+	windows_file_name = 'cheetah_exonss.bed'
+	output_file_name = 'top100_variable_exons.bed'
+	
+	if options.output_file: output_file_name = options.output_file
+	if options.vcf_file: vcf_file_name = options.vcf_file
+	if options.input_file: windows_file_name = options.input_file
+	
+	min_size = 2000
+	if options.min_size: min_size = options.min_size
+	output_amount = 100
+	if options.top_n: output_amount = options.top_n
+	
+	selector = TopNWindowsSelector(output_amount, options.normalize)
+	selector.load_windows_info(windows_file_name)
+	selector.load_snp(vcf_file_name)
+	selector.select_top_n(min_size)
+	selector.save_to_bed_file(output_file_name)
+	
 #vcf_file = open(vcf_file_name, 'r')
 
-# basic window object definition
-class WindowInfo(object):
-	def __init__(self, chromosome, window_start, window_end, name, cheetah_no = 7):
-		self.chromosome = chromosome
-		self.window_start = long(window_start)
-		self.window_end = long(window_end)
-		self.intron_name = name
-		self.counter = 0
-		self.cheetah_no = cheetah_no
-		self.cheetah = [ 0 for x in range(cheetah_no)]
-		self.line_infos = OrderedDict()
-		self.sequence = ''
-	#
-	def process_line(self, line):
-		if long(self.window_start) > long(line[1]) - 1 or long(self.window_end) < long(line[1]) - 1:
-			#print "{0}, {1}, {2}".format(self.window_start, self.window_end, line[1])
-			return
-		self.counter += 1 #the same as before
-		for x in range(self.cheetah_no):
-			if line[- self.cheetah_no + x].startswith('0/1'):
-				self.cheetah[x] += 1
-		self.line_infos[long(line[1])] = line
-	def normalized_counter(self):
-		return self.counter*1.0/(long(self.window_end) - long(self.window_start) + 1)
-	def to_str(self):
-		return "{0}\t{1}\t{2}".format(self.chromosome, self.window_start, self.window_end)
-# ----------
-# main code
-# ----------
-windows_file = open(windows_file_name, 'r')
-#load introns
-windows_container = OrderedDict()
-for st in windows_file:
-	window_line = st.split()
-	if (not window_line[0]  in windows_container.keys()): windows_container[window_line[0]] = OrderedDict()
-	window_container[window_line[0]][window_line[1]] = WindowInfo(*window_line[:4])
-
-windows_file.close
-
-#
-window_start = 0
-window_end = 0
-chromosome_name = ''
-
-vcf_file = open(vcf_file_name, 'r')
-
-list_line = list()
-#current_chromosome_data
-current_chrom_windows = OrderedDict()
-current_window = list()
-for i in vcf_file:
-	if i.startswith('#'):
-		continue
-	list_line = i.strip('\n').split()
-	if chromosome_name != list_line[0]:
-		chromosome_name = list_line[0]
-		current_chrom_windows = iter(window_container[list_line[0]].items())
-		current_window = next(current_chrom_windows)
-		window_start = current_window[1].window_start
-		window_end = current_window[1].window_end
-
-	if long(list_line[1]) - 1 <= long(WindowEnd):
-		current_window[1].process_line(list_line)
-	else:
-		try:
-			while long(list_line[1]) - 1 > long(WindowEnd):
-				current_window = next(current_chrom_windows)
-				window_start = current_window[1].window_start
-				window_end = current_window[1].window_end
-			current_window[1].process_line(list_line)
-		except:
-			continue
-vcf_file.close()
-
-min_size = 2000
-if options.min_size: min_size = options.min_size
-
-counter_list = [item for chrom_windows in window_container.values() for item in chrom_windows.values() if long(long(item.window_end) - long(item.window_start) + 1) >= long(min_size)]
-sorted_list = sorted(counter_list, key = lambda window: window.normalized_counter() if options.normalize else window.counter, reverse = True)
-sorted_by_cheetah = [sorted(counter_list, key = lambda window: window.cheetah[i], reverse = True) for i in range(7)]
-#TODO: compute number of species from header line in .bed file
-print len(set([x.counter for x in sorted_list]))
-
-#
-##1. output data for top n most variable
-output_amount = options.top_n
-filtered_list = sorted_list[: output_amount]
-g = open(output_file_name, 'w')
-for x in filtered_list:
-	g.write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n".format(x.chromosome, x.window_start, x.window_end, x.intron_name, x.counter, x.normalized_counter() if options.normalize else x.counter))
-g.close()
+if __name__ == "__main__":
+	main()
