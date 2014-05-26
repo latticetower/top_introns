@@ -2,7 +2,7 @@
 import fileinput
 import os.path
 from collections import OrderedDict
-from window_info2 import WindowInfo
+from window_info import WindowInfo
 from optparse import OptionParser
 
 

@@ -2,7 +2,7 @@
 import fileinput
 from collections import OrderedDict
 from optparse import OptionParser
-from window_info3 import WindowInfo
+from window_info import WindowInfo
 
 class TopNWindowsSelector(object):
 	def __init__(self, output_amount, normalize):

@@ -1,6 +1,6 @@
 import fileinput
 from collections import OrderedDict
-from window_info1 import WindowInfo
+from window_info import WindowInfo
 from optparse import OptionParser
 
 class WindowToFastaConverter(object):
