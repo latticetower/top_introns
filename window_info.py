@@ -1,8 +1,10 @@
 import fileinput
 from collections import OrderedDict
+import os.path
+
 # basic window object definition
 class WindowInfo(object):
-	def __init__(self, chromosome, window_start, window_end, name, species_no = 7):
+	def __init__(self, chromosome, window_start, window_end, name, species_no = 0):
 		self.chromosome = chromosome
 		self.window_start = long(window_start)
 		self.window_end = long(window_end)
@@ -27,6 +29,8 @@ class WindowInfo(object):
 			self.chromosome, 
 			self.window_start, 
 			self.window_end)
+	def normalized_counter(self):
+		return self.counter*1.0/(long(self.window_end) - long(self.window_start) + 1)
 	#
 	def getIUPAC(self, letters):
 		if len(letters) == 1:
@@ -84,25 +88,27 @@ class WindowInfo(object):
 					letters = self.getFromIUPAC(alt)
 				else:
 					letters = self.getFromIUPAC(alt) + self.getFromIUPAC(ref)
-			if options.verbose: print "got letters for {3} - {4} - {5}: {0} {1}, {2}".format(letters, self.getIUPAC(letters), x, index, self.window_start, i)
+			#if options.verbose: print "got letters for {3} - {4} - {5}: {0} {1}, {2}".format(letters, self.getIUPAC(letters), x, index, self.window_start, i)
 			buffer = buffer[:index] + self.getIUPAC(letters) + buffer[index + 1:]
-		if options.verbose: print "---\n result {0} string: {0}\n".format(self.chromosome, buffer)
+		#if options.verbose: print "---\n result {0} string: {0}\n".format(self.chromosome, buffer)
 		return buffer
 	#
 	def isoverlap(self, start, end):
 		return (self.window_start <= start and start <= self.window_end) or (self.window_start <= end and end <= self.window_end)
-	def print_to_nexus(self, output_folder_name):
+	def print_to_nexus(self, output_folder_name, species_amount, species_ids):
 		output_file_name = "{1}.nexus".format(output_folder_name, self.window_name)
 		dir_path = os.path.join(output_folder_name)
 		if not os.path.isdir(dir_path): os.makedirs(dir_path)
 		g = open(os.path.join(dir_path, output_file_name), 'w')
 		g.write("#NEXUS\n")
 		g.write("[ Title Phylogenetic Analysis]\nbegin data;\n")
-		g.write("   dimensions ntax=7 nchar={0};\n".format(len(self.sequence)))
+		g.write("   dimensions ntax={1} nchar={0};\n".format(len(self.sequence), species_amount))
 		g.write("   format missing=? gap=- matchchar=. datatype=dna interleave=yes;\n")
 		g.write("   matrix\n\n")
 		g.write("[!Domain=Data;]\n")
-		for i in range(7):
-			g.write("Species{0} {1}\n".format(i + 1, self.sequence_for_species(i)))
+		for i in range(species_amount):
+			g.write("{0} {1}\n".format(species_ids[i], self.sequence_for_species(i)))
 		g.write(";\nEnd;")
-		g.close()#for i in range(7):
+		g.close()#for i in range(species_amount):
+	def print_to_fasta(self):
+ 		return ">{0}\t{1}\n{2}\n".format(self.chromosome, self.window_name, self.sequence)

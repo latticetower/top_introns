@@ -10,13 +10,16 @@ class TopNWindowsSelector(object):
 		self.windows_container = OrderedDict()
 		self.chromosome_name = ""
 		self.normalize = normalize
+		self.species_amount = 0
+		self.species_ids = list()
+		
 	def load_windows_info(self, windows_file_name):
 		with open(windows_file_name) as f:
 			for st in f:
 				window_line = st.split()
 				if (not window_line[0]  in self.windows_container.keys()): 
 					self.windows_container[window_line[0]] = OrderedDict()
-				self.windows_container[window_line[0]][window_line[1]] = WindowInfo(*window_line[:4])
+				self.windows_container[window_line[0]][window_line[1]] = WindowInfo(*(window_line[:4] + [self.species_amount]))
 	
 	def process_snp(self, snp_info):
 		if self.chromosome_name != snp_info[0]:
@@ -41,6 +44,14 @@ class TopNWindowsSelector(object):
 	def load_snp(self, vcf_file_name):
 		with open(vcf_file_name) as f:
 			for line in f:
+				if line.find("#CHROM")!=-1:
+					table_header_line = line.strip('\n').split()
+					try:
+						self.species_amount = len(table_header_line) - table_header_line.index('FORMAT') - 1
+						self.species_ids = table_header_line[- self.species_amount : ]
+					except ValueError:
+						self.species_amount = 0
+					continue
 				if line.startswith('#'):
 					continue
 				snp_info = line.strip('\n').split()
@@ -57,7 +68,7 @@ class TopNWindowsSelector(object):
 						x.chromosome, 
 						x.window_start, 
 						x.window_end, 
-						x.intron_name, 
+						x.window_name, 
 						x.counter, 
 						x.normalized_counter() if self.normalize else x.counter
 					)

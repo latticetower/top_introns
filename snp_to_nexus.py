@@ -5,14 +5,14 @@ from collections import OrderedDict
 from window_info import WindowInfo
 from optparse import OptionParser
 
-
-
 class NexusSaver(object):
-	def __init(self):
+	def __init__(self):
 		self.windows_container = OrderedDict()
 		self.current_chrom_windows = OrderedDict()
 		self.chromosome_name = ""
 		self.current_window = list()
+		self.species_amount = 0
+		self.species_ids = list()
 	
 	def load_windows(self, windows_file_name):
 		with open(windows_file_name) as f:
@@ -26,7 +26,6 @@ class NexusSaver(object):
 		if self.chromosome_name != snp_info[0]:
 			self.chromosome_name = snp_info[0]
 			if not self.chromosome_name in self.windows_container.keys():
-				print "\n\n--not found {0}\n".format(self.chromosome_name)
 				return
 			self.current_chrom_windows = iter(sorted(self.windows_container[snp_info[0]].items(), key = lambda w: w[1].window_start))
 			self.current_window = next(self.current_chrom_windows)
@@ -47,31 +46,37 @@ class NexusSaver(object):
 	def load_from_vcf(self, vcf_file_name):
 		with open(vcf_file_name) as f:
 			for line in f:
+				if line.find("#CHROM") != -1:
+					table_header_line = line.strip('\n').split()
+					try:
+						self.species_amount = len(table_header_line) - table_header_line.index('FORMAT') - 1
+						self.species_ids = table_header_line[- self.species_amount : ]
+					except ValueError:
+						self.species_amount = 0
+					continue
 				if line.startswith('#'):
 					continue
 				snp_info = line.strip('\n').split()
-				load_snp_info(snp_info)
+				self.load_snp_info(snp_info)
 	#
 	#
 	def load_fasta(self, fasta_file_name):
 		chromosome_name = ''
-		exon_name = ''
+		window_name = ''
 		with open(fasta_file_name) as f:
 			for line in f:
 				if line.startswith('>'):
-					[chromosome_name, exon_name] = line[1:].strip('\n').split()[:2]
-					print "Loading new chromosome {0} {1}".format(chromosome_name, exon_name)
+					[chromosome_name, window_name] = line[1:].strip('\n').split()[:2]
+					print "...Loading new chromosome {0} {1}".format(chromosome_name, window_name)
 				else:
 					buffer = line.strip('\n')
-					yield(chromosome_name, exon_name, buffer)
-					#print len(buffer)
+					yield(chromosome_name, window_name, buffer)
 			#
 		#
 	def process_and_save(self, fasta_file_name, output_folder_name):
-		for chromosome_info in load_fasta(fasta_file_name):
-			#print "chrom info: {0}".format(chromosome)
+		for chromosome_info in self.load_fasta(fasta_file_name):
 			self.windows_container[chromosome_info[0]][chromosome_info[1]].sequence = chromosome_info[2]
-			self.windows_container[chromosome_info[0]][chromosome_info[1]].print_to_nexus(output_folder_name)
+			self.windows_container[chromosome_info[0]][chromosome_info[1]].print_to_nexus(output_folder_name, self.species_amount, self.species_ids)
 
 
 
