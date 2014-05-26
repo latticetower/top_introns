@@ -35,15 +35,15 @@ fasta_file_name = options.fasta_file_name
 window_file_name = options.window_file_name
 output_folder_name = options.output_folder
 
-#try:
+try:
 	#
-DataProcessor(window_file_name,
+	DataProcessor(window_file_name,
 		vcf_file_name,
 		fasta_file_name,
 		output_folder_name,
 		options.top_n, 
 		options.min_size,
 		options.normalize).process()
-print("--------\ndata processed and can be found in folder specified")
-#except:
-	#print "Got some error while processing input data. Look at README.md and check files you've provided, or call with --help key"
+	print("--------\ndata processed and can be found in folder specified")
+except:
+	print "Got some error while processing input data. Look at README.md and check files you've provided, or call with --help key"
