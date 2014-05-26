@@ -6,6 +6,8 @@ from optparse import OptionParser
 class WindowToFastaConverter(object):
 	def __init__(self):
 		self.current_chromosome = ""
+		self.chromosome_windows = list()
+		self.current_window = 0
 		
 	def load_fasta(self, fasta_file_name):
 		chromosome_name = ''
@@ -33,8 +35,10 @@ class WindowToFastaConverter(object):
 	def fill_sequence_info(self, chromosome_info):
 		if self.current_chromosome != chromosome_info[0]:
 			self.current_chromosome = chromosome_info[0]
-			if (not self.current_chromosome in self.filtered_list.keys()): return
-			self.chromosome_windows = iter(sorted(self.filtered_list[self.current_chromosome].items(),key = lambda w: long(w[0])))
+			if (not self.current_chromosome in self.filtered_list.keys()): 
+				self.current_chromosome = ''
+				return
+			self.chromosome_windows = iter(sorted(self.filtered_list[self.current_chromosome].items(), key = lambda w: long(w[0])))
 			self.current_window = next(self.chromosome_windows)
 		
 		#break
@@ -48,7 +52,6 @@ class WindowToFastaConverter(object):
 		if long(offset) <= long(self.current_window[1].window_end) and long(self.current_window[1].window_end) <= long(offset_end) and long(self.current_window[1].window_start < offset):
 			self.current_window[1].sequence += chromosome_info[1][ : self.current_window[1].window_end - offset + 1]
 			try:
-				#while long(current_window[1].window_end) < long(offset):
 				self.current_window = next(self.chromosome_windows)
 			except StopIteration:
 				return#

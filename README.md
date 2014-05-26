@@ -15,14 +15,20 @@ Usage
 
 The main script is ```top_introns.py```. It calls other scripts in the following order, providing all necessary command line arguments:
 
-- snpToBed.py,
+- snp_to_bed.py,
 
-- exonsToFasta.py,
+- windows_to_fasta.py,
 
-- snpToNexus.py.
+- snp_to_nexus.py.
 
 As a result, you may expect to recieve the folder containing .nexus files, which describe top n windows.
 
+Sample usage:
+
+```
+python.exe top_introns.py -v .\test_dataset2\test_snp_list.vcf -f .\test_dataset2\test_input.fasta -w .\test_dataset2\test_windows.bed -o results -n 3 --normalize
+```
+or you can call ```top_introns.py --help``` and get information about available options and their meaning.
 
 Input files format
 ------------------
@@ -38,6 +44,8 @@ The main script and worker scripts expect the following input data:
 
 3. .bed-like file with information about windows being examined (list of exons, introns, etc.). File is tab-separated, only first 4 columns are used: `chromosome name`, `start` and `end` positions, `window name`.
 
+Example input files can be found in folders named `test_dataset1` and `test_dataset2`.
+
 Output files format
 -------------------
 All output files are placed to selected folder and are named as `window name`.nexus (for each of top `n` windows).
@@ -49,6 +57,7 @@ These two files are generated and used by worker scripts to store intermediate r
 
 Calling worker scripts independently
 ------------------------------------
+If you want to call worker scripts independently, call them with "--help" key, to get information about their parameters.
 
 Project home page
 -----------------
