@@ -82,6 +82,7 @@ class NexusSaver(object):
 
   def process_and_save(self, fasta_file_name, output_folder_name):
     for chromosome_info in self.load_fasta(fasta_file_name):
+      print chromosome_info
       self.windows_container[chromosome_info[0]][chromosome_info[1]].sequence = chromosome_info[2]
       self.windows_container[chromosome_info[0]][chromosome_info[1]].print_to_nexus(output_folder_name, self.species_amount, self.species_ids)
 
