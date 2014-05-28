@@ -65,6 +65,8 @@ If you want to call worker scripts independently, call them with "--help" key, t
 Project home page
 -----------------
 
-The latest version of top_introns can be found at
+The latest version of top_introns can be found at:
 
 http://github.com/latticetower/top_introns
+
+Feel free to report about any problems and bugs via [Issues page](https://github.com/latticetower/top_introns/issues).
