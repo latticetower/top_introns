@@ -14,8 +14,8 @@ class WindowInfo(object):
     self.species = [ 0 for x in range(species_no)]
     self.line_infos = OrderedDict()
     self.sequence = ''
-  
-  
+
+
   def process_line(self, line):
     if long(self.window_start) > long(line[1]) - 1 or long(self.window_end) < long(line[1]) - 1:
       return
@@ -24,19 +24,19 @@ class WindowInfo(object):
       if line[- self.species_no + x].startswith('0/1'):
         self.species[x] += 1
     self.line_infos[long(line[1])] = line
-  
-  
+
+
   def to_str(self):
     return "{0}\t{1}\t{2}".format(
-      self.chromosome, 
-      self.window_start, 
+      self.chromosome,
+      self.window_start,
       self.window_end)
-  
-  
+
+
   def normalized_counter(self):
     return self.counter*1.0 / (long(self.window_end) - long(self.window_start) + 1)
-  
-  
+
+
   def getIUPAC(self, letters):
     if len(letters) == 1:
       return letters[0]
@@ -62,8 +62,8 @@ class WindowInfo(object):
       return 'W'
     if len(set(letters) & set(['C', 'G'])) == 2:
       return 'S'
-  
-  
+
+
   def getFromIUPAC(self, letter):
     return {
       'R': ['A', 'G'],
@@ -78,8 +78,8 @@ class WindowInfo(object):
       'V': ['A', 'C', 'G'],
       'N': ['A', 'C', 'T', 'G']
       }.get(letter, [letter])
-  
-  
+
+
   def sequence_for_species(self, i):
     buffer = ''.join(self.sequence)
     for x in self.line_infos.items():
@@ -97,15 +97,19 @@ class WindowInfo(object):
           letters = self.getFromIUPAC(alt) + self.getFromIUPAC(ref)
       buffer = buffer[ : index] + self.getIUPAC(letters) + buffer[index + 1 : ]
     return buffer
-  
-  
+
+
   def isoverlap(self, start, end):
     return (self.window_start <= start and start <= self.window_end) or (self.window_start <= end and end <= self.window_end)
-  
+
   def print_to_nexus(self, output_folder_name, species_amount, species_ids):
     output_file_name = "{1}.nexus".format(output_folder_name, self.window_name)
-    dir_path = os.path.join(output_folder_name)
-    if not os.path.isdir(dir_path): os.makedirs(dir_path)
+    if output_folder_name:
+      dir_path = os.path.join(output_folder_name)
+    else:
+      dir_path = os.getcwd()
+    if not os.path.isdir(dir_path):
+      os.makedirs(dir_path)
     g = open(os.path.join(dir_path, output_file_name), 'w')
     g.write("#NEXUS\n")
     g.write("[ Title Phylogenetic Analysis]\nbegin data;\n")
@@ -117,7 +121,7 @@ class WindowInfo(object):
       g.write("{0} {1}\n".format(species_ids[i], self.sequence_for_species(i)))
     g.write(";\nEnd;")
     g.close()#for i in range(species_amount):
-  
-  
+
+
   def print_to_fasta(self):
     return ">{0}\t{1}\n{2}\n".format(self.chromosome, self.window_name, self.sequence)

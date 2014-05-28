@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import fileinput
 import os.path
+import sys
 from collections import OrderedDict
 from window_info import WindowInfo
 from optparse import OptionParser
@@ -15,8 +16,8 @@ class NexusSaver(object):
     self.species_ids = list()
     self.window_start = 0
     self.window_end = 0
-  
-  
+
+
   def load_windows(self, windows_file_name):
     with open(windows_file_name) as f:
       for st in f:
@@ -24,8 +25,8 @@ class NexusSaver(object):
         if (not window_line[0] in self.windows_container.keys()):
           self.windows_container[window_line[0]] = OrderedDict()
         self.windows_container[window_line[0]][window_line[3]] = WindowInfo(*window_line[ : 4])
-  
-  
+
+
   def load_snp_info(self, snp_info):
     if self.chromosome_name != snp_info[0]:
       self.chromosome_name = snp_info[0]
@@ -35,20 +36,20 @@ class NexusSaver(object):
       self.current_window = next(self.current_chrom_windows)
       self.window_start = self.current_window[1].window_start
       self.window_end = self.current_window[1].window_end
-    
-    if long(snp_info[1]) - 1 <= long(window_end):
+
+    if long(snp_info[1]) - 1 <= long(self.window_end):
       self.current_window[1].process_line(snp_info)
     else:
       try:
-        while long(snp_info[1]) - 1 > long(window_end):
+        while long(snp_info[1]) - 1 > long(self.window_end):
           self.current_window = next(self.current_chrom_windows)
           self.window_start = self.current_window[1].window_start
           self.window_end = self.current_window[1].window_end
         current_window[1].process_line(snp_info)
       except:
         return
-  
-  
+
+
   def load_from_vcf(self, vcf_file_name):
     with open(vcf_file_name) as f:
       for line in f:
@@ -64,8 +65,8 @@ class NexusSaver(object):
           continue
         snp_info = line.strip('\n').split()
         self.load_snp_info(snp_info)
-  
-  
+
+
   def load_fasta(self, fasta_file_name):
     chromosome_name = ''
     window_name = ''
@@ -77,42 +78,45 @@ class NexusSaver(object):
         else:
           buffer = line.strip('\n')
           yield(chromosome_name, window_name, buffer)
-  
-  
+
+
   def process_and_save(self, fasta_file_name, output_folder_name):
     for chromosome_info in self.load_fasta(fasta_file_name):
       self.windows_container[chromosome_info[0]][chromosome_info[1]].sequence = chromosome_info[2]
       self.windows_container[chromosome_info[0]][chromosome_info[1]].print_to_nexus(output_folder_name, self.species_amount, self.species_ids)
 
 
-def main():
+def main(vcf_file_name, windows_file_name, fasta_file_name, output_folder_name):
+  result = 0
+  if not vcf_file_name:
+    result = 1
+  if not windows_file_name:
+    result = 1
+  if not fasta_file_name:
+    result = 1
+  if result:
+    return result
+  nexus_saver = NexusSaver()
+  nexus_saver.load_windows(windows_file_name)
+  nexus_saver.load_from_vcf(vcf_file_name)
+  nexus_saver.process_and_save(fasta_file_name, output_folder_name)
+  return result
+
+if __name__ == "__main__":
   parser = OptionParser()
-  
+
   parser.add_option("", "--vcf", dest = "vcf_file", help = "input FILE in .vcf format", metavar = "FILE")
   parser.add_option("-i", "--input", dest = "input_file", help = "input FILE in .bed format", metavar = "FILE")
   parser.add_option("-o", "--output", dest = "output_folder", help = "output folder for .nexus files", metavar = "FOLDER")
   parser.add_option("-f", "--fasta", dest = "referencefile", help = "input FILE in .fasta format", metavar = "FILE")
-  
-  parser.add_option("-v", "--verbose", action = "store_true", dest = "verbose", default = False,
-    help = "don't print status messages to stdout")
-  
+
   (options, args) = parser.parse_args()
-  
-  vcf_file_name = 'cheetah_SNP_filtered.vcf'
-  exons_file_name = 'top100_variable_exons.bed'
-  output_folder_name = 'results/'
-  fasta_file_name = 'cheetah_exons.fasta'
-  
-  if options.vcf_file: vcf_file_name = options.vcf_file
-  if options.input_file: exons_file_name = options.input_file
-  if options.output_folder: output_folder_name = options.output_folder
-  if options.referencefile: fasta_file_name = options.referencefile
-  
-  nexus_saver = NexusSaver()
-  nexus_saver.load_windows(exons_file_name)
-  nexus_saver.load_from_vcf(vcf_file_name)
-  nexus_saver.process_and_save(fasta_file_name, output_folder_name)
 
-
-if __name__ == "__main__":
-  main()
+  try:
+    result = main(options.vcf_file, options.input_file, options.referencefile, options.output_folder)
+    if result:
+      parser.print_help()
+      exit()
+  except Exception as e:
+    print >> sys.stderr, e
+    exit(1)

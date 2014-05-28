@@ -13,17 +13,17 @@ class TopNWindowsSelector(object):
     self.normalize = normalize
     self.species_amount = 0
     self.species_ids = list()
-  
-  
+
+
   def load_windows_info(self, windows_file_name):
     with open(windows_file_name) as f:
       for st in f:
         window_line = st.split()
-        if (not window_line[0]  in self.windows_container.keys()): 
+        if (not window_line[0]  in self.windows_container.keys()):
           self.windows_container[window_line[0]] = OrderedDict()
         self.windows_container[window_line[0]][window_line[1]] = WindowInfo(*(window_line[ : 4] + [self.species_amount]))
-  
-  
+
+
   def process_snp(self, snp_info):
     if self.chromosome_name != snp_info[0]:
       self.chromosome_name = snp_info[0]
@@ -43,8 +43,8 @@ class TopNWindowsSelector(object):
         self.current_window[1].process_line(snp_info)
       except:
         return
-  
-  
+
+
   def load_snp(self, vcf_file_name):
     with open(vcf_file_name) as f:
       for line in f:
@@ -60,32 +60,46 @@ class TopNWindowsSelector(object):
           continue
         snp_info = line.strip('\n').split()
         self.process_snp(snp_info)
-  
-  
+
+
   def select_top_n(self, min_size):
     counter_list = [item for chrom_windows in self.windows_container.values() for item in chrom_windows.values() if long(long(item.window_end) - long(item.window_start) + 1) >= long(min_size)]
     self.filtered_list = sorted(counter_list, key = lambda window: window.normalized_counter() if self.normalize else window.counter, reverse = True)
     self.filtered_list =  self.filtered_list[ : self.output_amount]
-  
-  
+
+
   def save_to_bed_file(self, output_file_name):
     g = open(output_file_name, 'w')
     for x in self.filtered_list:
       g.write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n".format(
-            x.chromosome, 
-            x.window_start, 
-            x.window_end, 
-            x.window_name, 
-            x.counter, 
+            x.chromosome,
+            x.window_start,
+            x.window_end,
+            x.window_name,
+            x.counter,
             x.normalized_counter() if self.normalize else x.counter
           )
         )
     g.close()
 
 
-def main():
+def main(vcf_file_name, windows_file_name, output_file_name, min_size, output_amount, normalize):
+  result = 0
+  if not vcf_file_name: result = 1
+  if not windows_file_name: result = 1
+  if result:
+    return result
+  selector = TopNWindowsSelector(output_amount, normalize)
+  selector.load_windows_info(windows_file_name)
+  selector.load_snp(vcf_file_name)
+  selector.select_top_n(min_size)
+  selector.save_to_bed_file(output_file_name)
+  return 0
+
+
+if __name__ == "__main__":
   parser = OptionParser()
-  
+
   parser.add_option("-v", "--vcf", dest = "vcf_file", help = "input FILE in .vcf format", metavar = "FILE")
   parser.add_option("-i", "--input", dest = "input_file", help = "input FILE in .bed format", metavar = "FILE")
   parser.add_option("-o", "--output", dest = "output_file", help = "output FILE in .bed format", metavar = "FILE")
@@ -94,26 +108,11 @@ def main():
   parser.add_option("-n", "", dest = "top_n", type = "int", default = 100)
   parser.add_option("-s", "--min-size", dest = "min_size", type = "int", default = 1)
   (options, args) = parser.parse_args()
-  
-  vcf_file_name = 'cheetah_SNP_filtered.vcf'
-  windows_file_name = 'cheetah_exonss.bed'
-  output_file_name = 'top100_variable_exons.bed'
-  
-  if options.output_file: output_file_name = options.output_file
-  if options.vcf_file: vcf_file_name = options.vcf_file
-  if options.input_file: windows_file_name = options.input_file
-  
-  min_size = 2000
-  if options.min_size: min_size = options.min_size
-  output_amount = 100
-  if options.top_n: output_amount = options.top_n
-  
-  selector = TopNWindowsSelector(output_amount, options.normalize)
-  selector.load_windows_info(windows_file_name)
-  selector.load_snp(vcf_file_name)
-  selector.select_top_n(min_size)
-  selector.save_to_bed_file(output_file_name)
-
-
-if __name__ == "__main__":
-  main()
+  try:
+    result = main(options.vcf_file, options.input_file, options.output_file,
+      options.min_size, options.top_n, options.normalize)
+    if result:
+      parser.print_help()
+      exit()
+  except Exception as e:
+    print e
