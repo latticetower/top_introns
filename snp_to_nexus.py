@@ -54,7 +54,7 @@ class NexusSaver(object):
     with open(vcf_file_name) as f:
       for line in f:
         if line.find("#CHROM") != -1:
-          table_header_line = line.strip('\n').split()
+          table_header_line = line.strip('\r\n').split()
           try:
             self.species_amount = len(table_header_line) - table_header_line.index('FORMAT') - 1
             self.species_ids = table_header_line[- self.species_amount : ]
@@ -63,7 +63,7 @@ class NexusSaver(object):
           continue
         if line.startswith('#'):
           continue
-        snp_info = line.strip('\n').split()
+        snp_info = line.strip('\r\n').split()
         self.load_snp_info(snp_info)
 
 
@@ -73,16 +73,15 @@ class NexusSaver(object):
     with open(fasta_file_name) as f:
       for line in f:
         if line.startswith('>'):
-          [chromosome_name, window_name] = line[1:].strip('\n').split()[:2]
+          [chromosome_name, window_name] = line[1:].strip('\r\n').split()[:2]
           print "...Loading new chromosome {0} {1}".format(chromosome_name, window_name)
         else:
-          buffer = line.strip('\n')
+          buffer = line.strip('\r\n')
           yield(chromosome_name, window_name, buffer)
 
 
   def process_and_save(self, fasta_file_name, output_folder_name):
     for chromosome_info in self.load_fasta(fasta_file_name):
-      print chromosome_info
       self.windows_container[chromosome_info[0]][chromosome_info[1]].sequence = chromosome_info[2]
       self.windows_container[chromosome_info[0]][chromosome_info[1]].print_to_nexus(output_folder_name, self.species_amount, self.species_ids)
 

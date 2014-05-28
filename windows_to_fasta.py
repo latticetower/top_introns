@@ -20,9 +20,9 @@ class WindowToFastaConverter(object):
         if line.startswith('>'):
           buffer = ''
           offset = 0
-          chromosome_name = line.strip('\n')[1 : ]
+          chromosome_name = line.strip('\r\n')[1 : ]
         else:
-          buffer = line.strip('\n')
+          buffer = line.strip('\r\n')
           yield(chromosome_name, buffer, offset)
           offset += len(buffer)
 
@@ -31,7 +31,7 @@ class WindowToFastaConverter(object):
     self.filtered_list = OrderedDict()
     with open(file_name) as f:
       for line in f:
-        line_data = line.strip('\n').split()
+        line_data = line.strip('\r\n').split()
         if (not line_data[0]  in self.filtered_list.keys()): self.filtered_list[line_data[0]] = OrderedDict()
         self.filtered_list[line_data[0]][line_data[1]] = WindowInfo(*line_data[ : 4])
 

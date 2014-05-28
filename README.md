@@ -5,10 +5,9 @@ top_introns is a collection of Python scripts for finding genome sequences that 
 
 Initially it was made for counting SNPs in cheetah genome.
 
-Dependencies
+Requirements
 ------------
-
-All scripts are written in python 2.7.
+python 2.7
 
 Usage
 -----
@@ -23,12 +22,16 @@ The main script is ```top_introns.py```. It calls other scripts in the following
 
 As a result, you may expect to recieve the folder containing .nexus files, which describe top n windows.
 
-Sample usage:
+Sample usage (Windows):
 
 ```
 python top_introns.py -v .\test_dataset2\test_snp_list.vcf -f .\test_dataset2\test_input.fasta -w .\test_dataset2\test_windows.bed -o results -n 3 --normalize
 ```
-or you can call ```top_introns.py --help``` and get information about available options and their meaning.
+Sample usage (Linux):
+```
+./top_introns.py --vcf test_dataset2/test_snp_list.vcf --fasta test_dataset2/test_input.fasta -w test_dataset2/test_windows.bed --normalize -o "res"
+```
+or you can call ```python top_introns.py --help``` and get information about available options and their meaning.
 
 Input files format
 ------------------

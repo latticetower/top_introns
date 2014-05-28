@@ -49,7 +49,7 @@ class TopNWindowsSelector(object):
     with open(vcf_file_name) as f:
       for line in f:
         if line.find("#CHROM") != -1:
-          table_header_line = line.strip('\n').split()
+          table_header_line = line.strip('\r\n').split()
           try:
             self.species_amount = len(table_header_line) - table_header_line.index('FORMAT') - 1
             self.species_ids = table_header_line[ - self.species_amount : ]
@@ -58,7 +58,7 @@ class TopNWindowsSelector(object):
           continue
         if line.startswith('#'):
           continue
-        snp_info = line.strip('\n').split()
+        snp_info = line.strip('\r\n').split()
         self.process_snp(snp_info)
 
 
